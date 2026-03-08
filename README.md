@@ -7,7 +7,7 @@
 <p align="center">
   <strong>Extract text instantly with AI. Built-in support for Gemini, Claude, and ChatGPT.</strong>
 </p>
-# ✦ Lumis — Image to Text with AI
+ ✦ Lumis — Image to Text with AI
 
 > *Where images become words.*
 
