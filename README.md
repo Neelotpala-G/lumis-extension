@@ -1,3 +1,12 @@
+<p align="center">
+  <img src="icons/icon128.png" width="160" alt="Lumis Logo">
+</p>
+
+<h1 align="center">Lumis — Image to Text with AI</h1>
+
+<p align="center">
+  <strong>Extract text instantly with AI. Built-in support for Gemini, Claude, and ChatGPT.</strong>
+</p>
 # ✦ Lumis — Image to Text with AI
 
 > *Where images become words.*
