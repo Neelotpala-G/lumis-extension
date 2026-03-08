@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Image to Text</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  width: 330px;
+  background: #06080f;
+  color: rgba(240,240,235,0.9);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Canvas — fills entire popup behind everything */
+#fc {
+  position: fixed;
+  top: 0; left: 0;
+  width: 330px;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Grain texture */
+#grain {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px;
+  opacity: 0.028;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Glass sheen */
+#sheen {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: linear-gradient(160deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0.004) 50%, rgba(0,0,0,0.1) 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Spotlight */
+#spot {
+  position: fixed;
+  width: 220px; height: 220px; border-radius: 50%;
+  pointer-events: none; z-index: 3; opacity: 0;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255,255,255,0.045) 0%, transparent 70%);
+  transition: opacity 0.4s ease;
+}
+
+/* All UI above canvas */
+.ui { position: relative; z-index: 10; }
+
+/* ── Header ── */
+.hdr { padding: 22px 22px 0; }
+.hdr-row { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+
+.logo {
+  width:40px; height:40px; border-radius:12px;
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.22);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+  box-shadow: 0 0 20px rgba(16,185,129,0.12), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.ai-row { display:flex; gap:5px; padding-top:4px; }
+.ai-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; padding: 4px 11px;
+  color: rgba(255,255,255,0.28); font-size:10.5px; font-weight:500;
+  font-family: 'Inter', sans-serif; cursor:pointer; transition:all 0.2s;
+}
+.ai-btn:hover { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.3); color:rgba(52,211,153,0.9); }
+
+.eyebrow {
+  font-size:9px; font-weight:500; text-transform:uppercase;
+  letter-spacing:0.2em; color:rgba(16,185,129,0.65);
+  margin-bottom:7px; display:flex; align-items:center; gap:7px;
+}
+.eyebrow::before { content:''; width:18px; height:1px; background:rgba(16,185,129,0.45); display:inline-block; }
+
+.h1 { font-family:'Cormorant',serif; font-size:29px; font-weight:300; line-height:1.1; color:rgba(240,240,235,0.9); }
+.h1 em { font-style:italic; color:rgba(52,211,153,0.88); }
+
+.rule { height:1px; margin:18px 0; background:linear-gradient(90deg, rgba(16,185,129,0.3), rgba(255,255,255,0.04) 60%, transparent); }
+
+/* ── Stats ── */
+.stats { display:flex; padding:0 22px 16px; }
+.stat { flex:1; text-align:center; position:relative; }
+.stat+.stat::before { content:''; position:absolute; left:0; top:15%; height:70%; width:1px; background:rgba(255,255,255,0.05); }
+.sn { font-family:'Cormorant',serif; font-size:27px; font-weight:300; color:rgba(52,211,153,0.82); line-height:1; }
+.sn.warn { color:rgba(245,158,11,0.85); }
+.sn.danger { color:rgba(239,68,68,0.82); }
+.sl { font-size:8.5px; font-weight:500; text-transform:uppercase; letter-spacing:0.12em; color:rgba(255,255,255,0.18); margin-top:3px; }
+
+/* ── Body ── */
+.bdy { padding:0 22px 18px; }
+
+.card {
+  background: rgba(255,255,255,0.028);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius:11px; padding:12px 14px;
+  margin-bottom:14px; position:relative; overflow:hidden;
+}
+.card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, rgba(16,185,129,0.45), rgba(20,184,166,0.18) 50%, transparent); }
+.ct { font-size:12px; font-weight:400; color:rgba(167,230,200,0.75); margin-bottom:3px; }
+.cb { font-size:10.5px; color:rgba(255,255,255,0.22); line-height:1.6; font-weight:300; }
+.cb a { color:rgba(52,211,153,0.65); text-decoration:none; }
+
+.warn-card {
+  background:rgba(217,119,6,0.06); border:1px solid rgba(245,158,11,0.15);
+  border-radius:11px; padding:10px 13px; margin-bottom:14px;
+  font-size:11px; color:rgba(251,191,36,0.75); line-height:1.6;
+  font-weight:300; display:none;
+}
+.warn-card.show { display:block; }
+.warn-card a { color:rgba(245,158,11,0.85); font-weight:500; text-decoration:none; }
+
+.lbl { font-size:9px; font-weight:500; color:rgba(255,255,255,0.18); text-transform:uppercase; letter-spacing:0.13em; display:flex; justify-content:space-between; margin-bottom:7px; }
+.lbl a { color:rgba(52,211,153,0.6); font-size:9px; text-transform:none; font-weight:400; text-decoration:none; letter-spacing:0; }
+.hint { font-size:10px; color:rgba(255,255,255,0.13); margin-bottom:7px; font-weight:300; }
+
+.irow { display:flex; gap:7px; }
+.inp {
+  flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  border-radius:9px; padding:9px 12px; color:rgba(240,240,235,0.85);
+  font-family:monospace; font-size:11.5px; outline:none; transition:all 0.2s;
+}
+.inp::placeholder { color:rgba(255,255,255,0.13); }
+.inp:focus { border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.04); box-shadow:0 0 0 3px rgba(16,185,129,0.06); }
+
+.sbtn {
+  background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.22);
+  border-radius:9px; padding:0 15px; color:rgba(52,211,153,0.82);
+  font-family:'Inter',sans-serif; font-size:11.5px; font-weight:500; cursor:pointer; transition:all 0.2s;
+}
+.sbtn:hover { background:rgba(16,185,129,0.18); border-color:rgba(16,185,129,0.4); }
+
+.status { font-size:10.5px; margin-top:6px; padding:5px 10px; border-radius:7px; display:none; font-weight:300; }
+.status.ok  { display:block; background:rgba(16,185,129,0.08); color:rgba(52,211,153,0.85); border:1px solid rgba(16,185,129,0.15); }
+.status.err { display:block; background:rgba(239,68,68,0.07); color:rgba(252,165,165,0.8); border:1px solid rgba(239,68,68,0.12); }
+
+.sep { height:1px; background:rgba(255,255,255,0.05); margin:14px 0; }
+
+.cta {
+  width:100%; padding:14px 0;
+  background:rgba(255,255,255,0.022);
+  border:1px solid rgba(16,185,129,0.18);
+  border-radius:12px; color:rgba(240,240,235,0.82);
+  font-family:'Cormorant',serif; font-size:17px; font-weight:300; letter-spacing:0.05em;
+  cursor:pointer; transition:all 0.25s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  position:relative; overflow:hidden;
+}
+.cta::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(20,184,166,0.04)); opacity:0; transition:opacity 0.25s; }
+.cta:hover { border-color:rgba(16,185,129,0.42); box-shadow:0 0 40px rgba(16,185,129,0.1); color:rgba(52,211,153,0.95); }
+.cta:hover::before { opacity:1; }
+.cta:active { transform:scale(0.99); }
+
+.dot {
+  width:6px; height:6px; border-radius:50%; flex-shrink:0;
+  background:rgba(52,211,153,0.8);
+  box-shadow:0 0 8px rgba(52,211,153,0.5), 0 0 20px rgba(16,185,129,0.25);
+  animation:pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.45;transform:scale(0.72)} }
+
+/* ── Footer ── */
+.ftr { padding:10px 22px 14px; border-top:1px solid rgba(255,255,255,0.04); display:flex; justify-content:space-between; align-items:center; }
+.fl { font-size:9.5px; color:rgba(255,255,255,0.16); font-weight:300; }
+.fl kbd { background:rgba(255,255,255,0.05); border-radius:4px; padding:1px 5px; font-size:9px; color:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.07); }
+.fr a { font-size:9.5px; color:rgba(255,255,255,0.16); text-decoration:none; font-weight:300; transition:color 0.2s; }
+.fr a:hover { color:rgba(52,211,153,0.65); }
+</style>
+</head>
+<body>
+
+<!-- Firefly canvas (layer 0) -->
+<canvas id="fc"></canvas>
+
+<!-- Grain + sheen + spotlight (layers 1-3) -->
+<div id="grain"></div>
+<div id="sheen"></div>
+<div id="spot"></div>
+
+<!-- All UI (layer 10) -->
+<div class="ui">
+
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">🔍</div>
+      <div class="ai-row">
+        <button class="ai-btn" id="geminiBtn">✦ Gemini</button>
+        <button class="ai-btn" id="claudeBtn">◈ Claude</button>
+        <button class="ai-btn" id="chatgptBtn">⬡ GPT</button>
+      </div>
+    </div>
+    <div class="eyebrow">Lumis · Image to Text with AI</div>
+    <div class="h1">Scan images,<br>extract <em>words</em></div>
+    <div class="rule"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="sn" id="statUsed">—</div><div class="sl">Used</div></div>
+    <div class="stat"><div class="sn" id="statRemaining">—</div><div class="sl">Remaining</div></div>
+    <div class="stat"><div class="sn" id="statDays">—</div><div class="sl">Days Left</div></div>
+  </div>
+
+  <div class="bdy">
+
+    <div class="warn-card" id="warnBox">
+      ⚠️ <strong id="warnCount">0</strong>/100 free uses —
+      <a href="https://ocr.space/ocrapi/freekey" target="_blank">get your own key</a> for 25k/month.
+    </div>
+
+    <div class="card" id="infoBox">
+      <div class="ct" id="infoTitle">Ready — no setup needed</div>
+      <div class="cb" id="infoBody">Built-in key included (100/month). For 25,000/month:
+        <a href="https://ocr.space/ocrapi/freekey" target="_blank">ocr.space/ocrapi/freekey</a>
+      </div>
+    </div>
+
+    <div class="lbl">
+      <span>API Key</span>
+      <a href="https://ocr.space/ocrapi/freekey" target="_blank">Get free key →</a>
+    </div>
+    <div class="hint">Optional · leave blank to use built-in key</div>
+    <div class="irow">
+      <input type="password" class="inp" id="apiKeyInput" placeholder="Paste your OCR.space key"/>
+      <button class="sbtn" id="saveKeyBtn">Save</button>
+    </div>
+    <div class="status" id="apiStatus"></div>
+
+    <div class="sep"></div>
+
+    <button class="cta" id="activateBtn">
+      <span class="dot"></span>
+      Activate Selection
+    </button>
+
+  </div>
+
+  <div class="ftr">
+    <div class="fl"><kbd>⌘ Shift X</kbd> to activate</div>
+    <div class="fr"><a href="https://ocr.space/ocrapi/freekey" target="_blank">25k free / month →</a></div>
+  </div>
+
+</div>
+
+<script src="firefly.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

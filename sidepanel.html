@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Lumis AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#06080f; --teal:rgba(52,211,153,0.9); --muted:#4a5568; --border:rgba(255,255,255,0.06); }
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      width:100%; height:100vh; background:var(--bg);
+      font-family:'Inter',sans-serif; display:flex; flex-direction:column;
+      overflow:hidden; position:relative;
+    }
+
+    .g1 { position:absolute; top:-60px; left:-40px; width:220px; height:200px; background:radial-gradient(ellipse,rgba(16,185,129,0.22) 0%,transparent 70%); filter:blur(50px); pointer-events:none; z-index:0; }
+    .g2 { position:absolute; top:-20px; right:-30px; width:160px; height:160px; background:radial-gradient(ellipse,rgba(20,184,166,0.12) 0%,transparent 70%); filter:blur(45px); pointer-events:none; z-index:0; }
+
+    /* Top bar */
+    .topbar {
+      position:relative; z-index:1;
+      background:rgba(255,255,255,0.018); flex-shrink:0;
+      padding:9px 12px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:5px;
+    }
+    .topbar::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,rgba(16,185,129,0.35),transparent 55%); }
+
+    .brand { font-family:'Cormorant',serif; font-size:13px; font-weight:300; color:rgba(52,211,153,0.6); letter-spacing:0.08em; margin-right:4px; flex-shrink:0; }
+    .vdiv  { width:1px; height:14px; background:rgba(255,255,255,0.07); margin-right:3px; flex-shrink:0; }
+
+    .tab {
+      background:transparent; border:1px solid rgba(255,255,255,0.06);
+      border-radius:20px; padding:3px 10px; color:rgba(255,255,255,0.25);
+      font-size:10.5px; font-weight:400; font-family:'Inter',sans-serif;
+      cursor:pointer; transition:all 0.2s; white-space:nowrap;
+    }
+    .tab:hover  { border-color:rgba(52,211,153,0.25); color:rgba(52,211,153,0.75); }
+    .tab.active { background:rgba(16,185,129,0.1); border-color:rgba(52,211,153,0.3); color:rgba(52,211,153,0.9); }
+
+    .refresh { margin-left:auto; background:transparent; border:1px solid rgba(255,255,255,0.06); border-radius:7px; padding:3px 8px; color:rgba(255,255,255,0.2); font-size:13px; cursor:pointer; transition:all 0.2s; flex-shrink:0; }
+    .refresh:hover { color:rgba(52,211,153,0.8); border-color:rgba(52,211,153,0.25); }
+
+    /* Loading screen */
+    #loading-screen { position:relative; z-index:1; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+    #loading-screen.hidden { display:none; }
+    .spinner-wrap { position:relative; width:40px; height:40px; }
+    .spinner { width:36px; height:36px; border:1.5px solid rgba(16,185,129,0.1); border-top-color:rgba(52,211,153,0.8); border-radius:50%; animation:spin 1s linear infinite; }
+    .spinner-dot { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:rgba(52,211,153,0.8); box-shadow:0 0 8px rgba(52,211,153,0.5); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .load-brand { font-family:'Cormorant',serif; font-size:22px; font-weight:300; color:rgba(240,240,235,0.6); letter-spacing:0.05em; }
+    .load-brand em { font-style:italic; color:rgba(52,211,153,0.7); }
+    .load-t { font-size:11px; color:rgba(255,255,255,0.2); font-weight:300; letter-spacing:0.05em; }
+
+    /* Claude blocked screen */
+    #claude-screen {
+      position:relative; z-index:1; flex:1;
+      display:none; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:0; padding:32px 28px;
+      text-align:center;
+    }
+    #claude-screen.visible { display:flex; }
+
+    .claude-icon {
+      width:56px; height:56px; border-radius:16px;
+      background:rgba(210,130,80,0.1);
+      border:1px solid rgba(210,130,80,0.2);
+      display:flex; align-items:center; justify-content:center;
+      font-size:26px; margin-bottom:20px;
+      box-shadow:0 0 30px rgba(210,130,80,0.1);
+    }
+    .claude-title {
+      font-family:'Cormorant',serif; font-size:22px; font-weight:300;
+      color:rgba(240,240,235,0.85); margin-bottom:8px; letter-spacing:0.02em;
+    }
+    .claude-title em { font-style:italic; color:rgba(210,160,100,0.85); }
+    .claude-desc {
+      font-size:11px; color:rgba(255,255,255,0.2); line-height:1.7;
+      font-weight:300; margin-bottom:28px; max-width:220px;
+    }
+
+    /* Open button */
+    .open-btn {
+      display:flex; align-items:center; gap:8px;
+      padding:11px 24px;
+      background:rgba(210,130,80,0.08);
+      border:1px solid rgba(210,130,80,0.25);
+      border-radius:12px;
+      color:rgba(240,210,180,0.85);
+      font-family:'Cormorant',serif; font-size:16px; font-weight:300;
+      letter-spacing:0.04em; cursor:pointer; transition:all 0.25s;
+      text-decoration:none; position:relative; overflow:hidden;
+    }
+    .open-btn::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(210,130,80,0.08),rgba(245,158,11,0.04)); opacity:0; transition:opacity 0.25s; }
+    .open-btn:hover { border-color:rgba(210,130,80,0.45); box-shadow:0 0 30px rgba(210,130,80,0.1); color:rgba(255,220,180,0.95); }
+    .open-btn:hover::before { opacity:1; }
+    .open-btn-dot { width:5px; height:5px; border-radius:50%; background:rgba(210,160,100,0.8); box-shadow:0 0 6px rgba(210,130,80,0.6); animation:pulse 2.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+    /* If query was passed, show it */
+    .query-preview {
+      margin-top:20px; padding:10px 14px;
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:9px; font-size:10px;
+      color:rgba(255,255,255,0.25); line-height:1.6;
+      font-weight:300; max-width:240px; word-break:break-word;
+      display:none;
+    }
+    .query-preview.show { display:block; }
+    .query-label { font-size:8.5px; text-transform:uppercase; letter-spacing:0.12em; color:rgba(52,211,153,0.4); margin-bottom:4px; }
+
+    /* iframe */
+    #ai-frame { flex:1; width:100%; border:none; background:#fff; display:none; }
+    #ai-frame.visible { display:block; }
+  </style>
+</head>
+<body>
+  <div class="g1"></div>
+  <div class="g2"></div>
+
+  <div class="topbar">
+    <span class="brand">Lumis</span>
+    <div class="vdiv"></div>
+    <button class="tab active" id="tabGemini">✦ Gemini</button>
+    <button class="tab"        id="tabClaude">◈ Claude</button>
+    <button class="tab"        id="tabChatGPT">⬡ GPT</button>
+    <button class="refresh"    id="refreshBtn" title="Refresh">↺</button>
+  </div>
+
+  <!-- Spinner -->
+  <div id="loading-screen">
+    <div class="spinner-wrap">
+      <div class="spinner"></div>
+      <div class="spinner-dot"></div>
+    </div>
+    <div class="load-brand">Lu<em>mis</em></div>
+    <div class="load-t" id="loadTitle">Loading Gemini...</div>
+  </div>
+
+  <!-- Claude fallback screen -->
+  <div id="claude-screen">
+    <div class="claude-icon">◈</div>
+    <div class="claude-title">Open <em>Claude</em></div>
+    <div class="claude-desc">Claude runs best in its own tab. Click below — your text will open pre-loaded and ready to go.</div>
+    <a class="open-btn" id="claudeOpenBtn" href="https://claude.ai/new" target="_blank">
+      <span class="open-btn-dot"></span>
+      Open Claude →
+    </a>
+    <div class="query-preview" id="queryPreview">
+      <div class="query-label">Your extracted text</div>
+      <div id="queryText"></div>
+    </div>
+  </div>
+
+  <iframe id="ai-frame" src=""
+    allow="clipboard-read; clipboard-write; microphone; camera"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation">
+  </iframe>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

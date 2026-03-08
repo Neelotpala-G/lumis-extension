@@ -1,0 +1,330 @@
+/* ── Dim Overlay ─────────────────────────── */
+#ocr-dim-overlay {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.45);
+  z-index: 2147483640; cursor: crosshair; pointer-events: all;
+}
+
+/* ── Selection Box ───────────────────────── */
+#ocr-selection-box {
+  position: fixed; display: none;
+  border: 2px solid #7c3aed;
+  background: rgba(124,58,237,0.08);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.15);
+  z-index: 2147483645; pointer-events: none; border-radius: 2px;
+}
+
+/* ── Info Label ──────────────────────────── */
+#ocr-info-label {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,10,20,0.94); color: #c8d0ff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 8px 20px; border-radius: 20px;
+  z-index: 2147483647; pointer-events: none;
+  border: 1px solid rgba(124,58,237,0.3);
+}
+
+/* ── Spinner Animation ───────────────────── */
+@keyframes ocr-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.ocr-spinner {
+  display: inline-block;
+  width: 13px; height: 13px;
+  border: 2px solid rgba(167,139,250,0.3);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: ocr-spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* ── Notification Toast ──────────────────── */
+#ocr-notification {
+  position: fixed; bottom: 28px; right: 28px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13.5px; font-weight: 500;
+  padding: 11px 18px; border-radius: 12px;
+  z-index: 2147483647;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  display: flex; align-items: center;
+  animation: ocr-slidein 0.2s ease;
+  max-width: 380px;
+}
+.ocr-notif-success { background:#1a2e1a; color:#5ddd7d; border:1px solid #2e5e2e; }
+.ocr-notif-error   { background:#2e1a1a; color:#ff7070; border:1px solid #5e2e2e; }
+.ocr-notif-info    { background:#1a1a2e; color:#a78bfa; border:1px solid #3e2e6e; }
+@keyframes ocr-slidein {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ── Result Popup ────────────────────────── */
+#ocr-result-popup {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #0f111a;
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  z-index: 2147483647;
+  width: 440px; max-width: 92vw;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  animation: ocr-slidein 0.2s ease;
+  overflow: hidden;
+}
+
+/* Header — grab cursor shows it's draggable */
+#ocr-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px;
+  background: #1a1a2e;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: #c0c8f0; font-size: 14px; font-weight: 600;
+  user-select: none; /* prevent text selection while dragging */
+}
+
+#ocr-close-btn {
+  background: none; border: none; color: #6a6a9a;
+  font-size: 17px; cursor: pointer; padding: 2px 6px;
+  border-radius: 6px; transition: background 0.15s; line-height: 1;
+}
+#ocr-close-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+/* Display view — formatted HTML with clickable links */
+#ocr-text-display {
+  min-height: 110px; max-height: 260px;
+  padding: 14px 18px;
+  background: #0a0c14; color: #c8d8ff;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px; line-height: 1.7;
+  overflow-y: auto; white-space: pre-wrap;
+  word-break: break-word; cursor: text;
+  user-select: text; /* allow text selection */
+}
+
+/* Edit textarea — hidden by default */
+#ocr-text-area {
+  width: 100%; box-sizing: border-box;
+  min-height: 110px; max-height: 260px;
+  padding: 14px 18px;
+  background: #0a0c14; color: #c8d8ff;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px; line-height: 1.7;
+  border: none; outline: none; resize: vertical; overflow-y: auto;
+}
+
+/* Hidden utility class */
+.ocr-hidden { display: none !important; }
+
+/* Clickable links inside detected text */
+.ocr-link {
+  color: #a78bfa; text-decoration: underline; cursor: pointer;
+}
+.ocr-link:hover { color: #c4b5fd; }
+
+/* Action buttons row */
+#ocr-popup-actions {
+  display: flex; gap: 8px; padding: 12px 16px;
+  background: #1a1a2e;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: wrap;
+}
+#ocr-popup-actions button {
+  flex: 1; min-width: 70px; padding: 8px 4px;
+  border-radius: 9px; border: none;
+  font-size: 11.5px; font-weight: 600; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+#ocr-popup-actions button:active { transform: scale(0.97); }
+#ocr-copy-btn     { background: #7c3aed; color: #fff; }
+#ocr-copy-btn:hover { opacity: 0.85; }
+#ocr-edit-btn     { background: #1e1e30; color: #8a8abf; }
+#ocr-edit-btn:hover { background: #28284a; }
+#ocr-google-btn   { background: #1a2e1a; color: #5ddd7d; }
+#ocr-google-btn:hover { background: #223a22; }
+#ocr-download-btn { background: #1a1e30; color: #7ab8ff; }
+#ocr-download-btn:hover { background: #22284a; }
+
+/* ── Selection Floating Menu ─────────────── */
+#ocr-sel-menu {
+  position: fixed;
+  background: #1a1a2e;
+  border: 1px solid rgba(124,58,237,0.4);
+  border-radius: 10px;
+  padding: 5px 6px;
+  display: flex; gap: 6px;
+  z-index: 2147483647;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: ocr-slidein 0.15s ease;
+}
+#ocr-sel-menu button {
+  background: none; border: none;
+  color: #c0c8f0; font-size: 12px; font-weight: 600;
+  padding: 5px 10px; border-radius: 7px; cursor: pointer;
+  white-space: nowrap; transition: background 0.15s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+#ocr-sel-gemini:hover { background: rgba(124,58,237,0.2); color: #a78bfa; }
+#ocr-sel-google:hover { background: rgba(52,168,83,0.15); color: #5ddd7d; }
+
+/* ══════════════════════════════════════════
+   PREMIUM RESULT POPUP
+══════════════════════════════════════════ */
+
+#ocr-result-popup {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #07080d;
+  border: 1px solid rgba(200,169,110,0.15);
+  border-radius: 16px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03);
+  z-index: 2147483647;
+  width: 460px; max-width: 93vw;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  animation: ocr-slidein 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+#ocr-result-popup::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(200,169,110,0.3), transparent);
+}
+
+#ocr-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px;
+  background: #0d0f17;
+  color: #c8c0b0; font-size: 12px; font-weight: 500;
+  user-select: none;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+#ocr-close-btn {
+  background: none; border: none; color: #3a3a5a;
+  font-size: 16px; cursor: pointer; padding: 2px 6px;
+  border-radius: 6px; transition: all 0.15s; line-height: 1;
+  font-family: inherit;
+}
+#ocr-close-btn:hover { color: #c8a96e; background: rgba(200,169,110,0.08); }
+
+#ocr-text-display {
+  min-height: 100px; max-height: 240px;
+  padding: 16px 18px;
+  background: #07080d; color: #d8d0c4;
+  font-family: 'Courier New', 'SF Mono', monospace;
+  font-size: 12.5px; line-height: 1.8;
+  overflow-y: auto; white-space: pre-wrap;
+  word-break: break-word; cursor: text;
+  user-select: text;
+  scrollbar-width: thin; scrollbar-color: rgba(200,169,110,0.2) transparent;
+}
+
+#ocr-text-area {
+  width: 100%; box-sizing: border-box;
+  min-height: 100px; max-height: 240px;
+  padding: 16px 18px;
+  background: #07080d; color: #d8d0c4;
+  font-family: 'Courier New', 'SF Mono', monospace;
+  font-size: 12.5px; line-height: 1.8;
+  border: none; outline: none; resize: vertical;
+  overflow-y: auto;
+}
+
+#ocr-popup-actions {
+  display: flex; gap: 6px; padding: 11px 14px;
+  background: #0d0f17;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  flex-wrap: wrap;
+}
+
+#ocr-popup-actions button {
+  flex: 1; min-width: 60px; padding: 7px 4px;
+  border-radius: 8px; border: 1px solid transparent;
+  font-size: 11px; font-weight: 500;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  cursor: pointer; transition: all 0.18s; letter-spacing: 0.02em;
+}
+#ocr-popup-actions button:active { transform: scale(0.97); }
+
+#ocr-copy-btn {
+  background: rgba(200,169,110,0.1); color: #c8a96e;
+  border-color: rgba(200,169,110,0.2);
+}
+#ocr-copy-btn:hover { background: rgba(200,169,110,0.18); border-color: rgba(200,169,110,0.35); }
+
+#ocr-edit-btn {
+  background: rgba(255,255,255,0.03); color: #5a5a7a;
+  border-color: rgba(255,255,255,0.06);
+}
+#ocr-edit-btn:hover { background: rgba(255,255,255,0.07); color: #9090b0; }
+
+#ocr-google-btn {
+  background: rgba(80,160,100,0.08); color: #6abf7a;
+  border-color: rgba(80,160,100,0.15);
+}
+#ocr-google-btn:hover { background: rgba(80,160,100,0.14); }
+
+#ocr-download-btn {
+  background: rgba(80,120,200,0.08); color: #7090d0;
+  border-color: rgba(80,120,200,0.15);
+}
+#ocr-download-btn:hover { background: rgba(80,120,200,0.14); }
+
+/* ── Selection Floating Menu (premium) ── */
+#ocr-sel-menu {
+  position: fixed;
+  background: #0d0f17;
+  border: 1px solid rgba(200,169,110,0.2);
+  border-radius: 10px;
+  padding: 5px 5px;
+  display: flex; gap: 4px;
+  z-index: 2147483647;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03);
+  animation: ocr-slidein 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#ocr-sel-menu::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(200,169,110,0.25), transparent);
+  border-radius: 10px 10px 0 0;
+}
+#ocr-sel-menu button {
+  background: none; border: none;
+  color: #8888a8; font-size: 11.5px; font-weight: 500;
+  padding: 5px 11px; border-radius: 7px; cursor: pointer;
+  white-space: nowrap; transition: all 0.15s;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+}
+#ocr-sel-gemini:hover { background: rgba(200,169,110,0.1); color: #c8a96e; }
+#ocr-sel-google:hover { background: rgba(80,160,100,0.1); color: #6abf7a; }
+
+/* ── Notification (premium) ── */
+#ocr-notification {
+  position: fixed; bottom: 24px; right: 24px;
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  font-size: 12.5px; font-weight: 400;
+  padding: 10px 16px; border-radius: 10px;
+  z-index: 2147483647;
+  display: flex; align-items: center; gap: 8px;
+  animation: ocr-slidein 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 340px; letter-spacing: 0.01em;
+  backdrop-filter: blur(12px);
+}
+.ocr-notif-success { background:rgba(10,20,12,0.96); color:#6abf7a; border:1px solid rgba(80,160,80,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+.ocr-notif-error   { background:rgba(20,10,10,0.96); color:#c07070; border:1px solid rgba(180,60,60,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+.ocr-notif-info    { background:rgba(10,10,20,0.96); color:#c8a96e; border:1px solid rgba(200,169,110,0.15); box-shadow:0 8px 32px rgba(0,0,0,0.5); }
+
+/* Override old spinner color */
+.ocr-spinner {
+  border-color: rgba(200,169,110,0.2);
+  border-top-color: #c8a96e;
+}
+
+/* clickable links in result */
+.ocr-link { color: #c8a96e; text-decoration: none; border-bottom: 1px solid rgba(200,169,110,0.25); }
+.ocr-link:hover { border-color: #c8a96e; }
